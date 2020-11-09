@@ -1,6 +1,7 @@
 package me.halfheart.fortniteautoexporter;
 
 
+import me.fungames.jfortniteparse.fileprovider.FileProvider;
 import me.fungames.jfortniteparse.ue4.versions.Ue4Version;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -14,15 +15,7 @@ import java.nio.file.Paths;
 public class main {
     private static final Logger LOGGER = LoggerFactory.getLogger("FortniteAutoExporter");
     private static Config config;
-    private static String Dev = "true";
-
-    private static String makeConfig() {
-        JSONObject rootConfigJSON = new JSONObject();
-        rootConfigJSON.put("Repo", config.repo);
-        rootConfigJSON.put("PaksDirectory", config.PaksDirectory);
-        rootConfigJSON.put("UEVersion", config.UEVersion);
-        return rootConfigJSON.toString();
-    }
+    private static FileProvider fileProvider;
 
     public static void main(String[] Args) throws Exception {
 
@@ -33,20 +26,23 @@ public class main {
             LOGGER.info("Creating Configuration File");
             configFile.createNewFile();
             try {
-                String writeToFile = makeConfig();
+                JSONObject rootConfigJSON = new JSONObject();
+                rootConfigJSON.put("Repo", config.repo);
+                rootConfigJSON.put("PaksDirectory", config.PaksDirectory);
+                rootConfigJSON.put("UEVersion", config.UEVersion);
+                String writeToFile = rootConfigJSON.toString(4);
                 LOGGER.info("Writing to Configuration File");
                 Files.write(Paths.get("config.json"), writeToFile.getBytes());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            } catch (Exception e) {e.printStackTrace();}
         }
 
         LOGGER.info("Reading Configuration File " + configFile.getAbsolutePath());
+
     }
 
     public static class Config {
         public static String repo = "https://github.com/24mstrassman/AutoExporter";
-        public static String PaksDirectory = "D:\\Fortnite\\";
+        public static String PaksDirectory = "D:\\Fortnite 14.30 Backup\\Paks";
         public static Ue4Version UEVersion = Ue4Version.GAME_UE4_LATEST;
 
     }
