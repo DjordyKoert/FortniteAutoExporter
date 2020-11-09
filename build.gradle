@@ -1,0 +1,18 @@
+plugins {
+    id 'java'
+}
+
+group 'me.halfheart'
+version '0.1.0'
+
+repositories {
+    mavenCentral()
+    maven { url 'https://dl.bintray.com/fungamesleaks/mavenRepo' }
+}
+
+dependencies {
+    implementation 'org.slf4j:slf4j-api:1.7.30'
+    implementation 'me.fungames:JFortniteParse:3.2.7'
+    compile group: 'org.json', name: 'json', version: '20200518'
+
+}
