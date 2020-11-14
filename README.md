@@ -7,8 +7,6 @@ A tool made in Java/Python to automatically export and importing Fortnite Skins
 * 64-bit Java
 * The Latest [Blender PSK/PSA Import Plguin](https://github.com/Befzz/blender3d_import_psk_psa)
 * 14.30 Fortnite Pak Files
-* The [September 30th Build](https://github.com/gildor2/UEViewer/blob/25f494af0f64293ced8ac4fab8506467aa0b5876/umodel.exe) of uModel along with [SDL2.dll](https://github.com/gildor2/UEViewer/blob/master/libs/SDL2/x64/SDL2.dll)
-    * Any umodel version past September 30th crashes with Skeletal Meshes  
 
 
 ### Exporter
