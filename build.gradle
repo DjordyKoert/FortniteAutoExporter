@@ -2,8 +2,17 @@ plugins {
     id 'java'
 }
 
-group 'me.halfheart'
+group 'com.halfheart'
 version '0.1.0'
+
+jar {
+    manifest {
+        attributes (
+                'Main-Class': "com.halfheart.fortniteautoexporter.Main"
+        )
+    }
+}
+
 
 repositories {
     google()
@@ -17,6 +26,5 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.6'
     implementation 'com.squareup.okhttp3:okhttp:3.14.9'
     implementation 'me.fungames:JFortniteParse:3.2.7'
-    compile group: 'org.json', name: 'json', version: '20200518'
 
 }

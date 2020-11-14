@@ -1,25 +1,17 @@
-package me.halfheart.fortniteautoexporter;
+package com.halfheart.fortniteautoexporter;
 
 import com.google.gson.*;
 import me.fungames.jfortniteparse.fileprovider.DefaultFileProvider;
 import me.fungames.jfortniteparse.ue4.assets.Package;
-import me.fungames.jfortniteparse.ue4.locres.FnLanguage;
 import me.fungames.jfortniteparse.ue4.locres.Locres;
-import me.fungames.jfortniteparse.ue4.objects.core.misc.FGuid;
-
-import java.io.File;
-
-import static me.halfheart.fortniteautoexporter.basicTools.createFile;
-
-
 
 public class ItemDefinitionConversions {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private static Locres locres;
     private static DefaultFileProvider fileProvider;
-    private static main.Config config;
-    private static main.CharacterResponse cosmeticResponse;
+    private static Main.Config config;
+    private static Main.CharacterResponse cosmeticResponse;
     private static Package pkg;
 
 

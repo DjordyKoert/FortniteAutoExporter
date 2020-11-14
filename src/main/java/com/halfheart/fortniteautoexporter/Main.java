@@ -1,15 +1,15 @@
-package me.halfheart.fortniteautoexporter;
+package com.halfheart.fortniteautoexporter;
 
 import com.google.gson.*;
 
-import static me.halfheart.fortniteautoexporter.basicTools.checkForLocalDirectory;
-import static me.halfheart.fortniteautoexporter.basicTools.createDirectory;
-import static me.halfheart.fortniteautoexporter.basicTools.createFile;
-import static me.halfheart.fortniteautoexporter.basicTools.promptUser;
+import static com.halfheart.fortniteautoexporter.basicTools.checkForLocalDirectory;
+import static com.halfheart.fortniteautoexporter.basicTools.createDirectory;
+import static com.halfheart.fortniteautoexporter.basicTools.createFile;
+import static com.halfheart.fortniteautoexporter.basicTools.promptUser;
 
-import static me.halfheart.fortniteautoexporter.ItemDefinitionConversions.CIDtoHIDName;
-import static me.halfheart.fortniteautoexporter.ItemDefinitionConversions.CIDtoHIDPath;
-import static me.halfheart.fortniteautoexporter.ItemDefinitionConversions.HIDtoHS;
+import static com.halfheart.fortniteautoexporter.ItemDefinitionConversions.CIDtoHIDName;
+import static com.halfheart.fortniteautoexporter.ItemDefinitionConversions.CIDtoHIDPath;
+import static com.halfheart.fortniteautoexporter.ItemDefinitionConversions.HIDtoHS;
 
 import me.fungames.jfortniteparse.fileprovider.DefaultFileProvider;
 import me.fungames.jfortniteparse.ue4.assets.Package;
@@ -25,10 +25,10 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 
 import java.util.Arrays;
-public class main {
+public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger("FortniteAutoExporter");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static String localDir = System.getProperty("user.dir");
+    private static final String localDir = System.getProperty("user.dir");
 
     private static Config config;
     private static DefaultFileProvider fileProvider;
@@ -94,19 +94,16 @@ public class main {
             }
 
             skinToParts();
-            if (config.umodelExport) {
-                umodelExport();
-            }
+            umodelExport();
 
             JsonObject root = new JsonObject();
             try {
-                root.addProperty("assetPath1", localDir + "\\UmodelExport" + CombinedMeshes.charPart1.replace("/", "\\"));
-                root.addProperty("assetPath2", localDir + "\\UmodelExport" + CombinedMeshes.charPart2.replace("/", "\\"));
-                root.addProperty("assetPath3", localDir + "\\UmodelExport" + CombinedMeshes.charPart3.replace("/", "\\"));
-                root.addProperty("assetPath4", localDir + "\\UmodelExport" + CombinedMeshes.charPart4.replace("/", "\\"));
-                root.addProperty("assetPath5", localDir + "\\UmodelExport" + CombinedMeshes.charPart5.replace("/", "\\"));
+                root.addProperty("assetPath1", localDir + "\\UmodelExport" + CombinedMeshes.charPart1.replace("/", "\\")+ ".psk");
+                root.addProperty("assetPath2", localDir + "\\UmodelExport" + CombinedMeshes.charPart2.replace("/", "\\") + ".psk");
+                root.addProperty("assetPath3", localDir + "\\UmodelExport" + CombinedMeshes.charPart3.replace("/", "\\") + ".psk");
+                root.addProperty("assetPath4", localDir + "\\UmodelExport" + CombinedMeshes.charPart4.replace("/", "\\") + ".psk");
+                root.addProperty("assetPath5", localDir + "\\UmodelExport" + CombinedMeshes.charPart5.replace("/", "\\") + ".psk");
             } catch (Throwable e) {}
-            System.out.println(GSON.toJson(root));
             File processedFile = new File("processed.json");
             processedFile.createNewFile();
             FileWriter writer = new FileWriter(processedFile);
@@ -116,6 +113,7 @@ public class main {
 
             e.printStackTrace();
         }
+        System.out.println("\nReplace workingDirectory in the python script with: \n\"" + localDir + "\"\n");
         LOGGER.info("Finished Exporting.");
         System.exit(0);
     }
@@ -197,7 +195,7 @@ public class main {
                     CPtoMesh cptoMesh = GSON.fromJson(toJson, CPtoMesh.class);
                     String[] MeshSplit = cptoMesh.export_properties[1].SkeletalMesh.assetPath.split("\\.");
                     CombinedMeshes.charPart2 = MeshSplit[0];
-                    ;
+
                 } else if (i == 2) {
                     CharacterParts.CPPath3 = MeshPath;
                     CharacterParts.CPName3 = MeshName;
@@ -298,12 +296,10 @@ public class main {
         }
 
     public static class Config {
-            public String repo = "https://github.com/24mstrassman/AutoExporter";
             public String PakDirectory = "D:\\Fortnite 14.30 Backup\\Paks";
             public Ue4Version UEVersion = Ue4Version.GAME_UE4_LATEST;
             public String EncryptionKey = "0x3440AB1D1B824905842BE1574F149F9FC7DBA2BB566993E597402B4715A28BD5";
             public boolean dumpAssets = false;
-            public boolean umodelExport = true;
         }
 
     private static class MainException extends Exception {
