@@ -22,26 +22,20 @@ import okhttp3.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileReader;
+import java.io.*;
 
-import java.io.Reader;
 import java.util.Arrays;
-import java.util.List;
-
 public class main {
     private static final Logger LOGGER = LoggerFactory.getLogger("FortniteAutoExporter");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static String localDir = System.getProperty("user.dir");
 
     private static Config config;
     private static DefaultFileProvider fileProvider;
     private static CharacterResponse cosmeticResponse;
-    private static CharacterPartsPath characterPartsPath;
 
     private static Package pkg;
     private static Locres locres;
-
-    private static long start = System.currentTimeMillis();
 
     public static void main(String[] Args) throws Exception {
         try {
@@ -100,19 +94,50 @@ public class main {
             }
 
             skinToParts();
+            if (config.umodelExport) {
+                umodelExport();
+            }
 
+            JsonObject root = new JsonObject();
+            try {
+                root.addProperty("assetPath1", localDir + "\\UmodelExport" + CombinedMeshes.charPart1.replace("/", "\\"));
+                root.addProperty("assetPath2", localDir + "\\UmodelExport" + CombinedMeshes.charPart2.replace("/", "\\"));
+                root.addProperty("assetPath3", localDir + "\\UmodelExport" + CombinedMeshes.charPart3.replace("/", "\\"));
+                root.addProperty("assetPath4", localDir + "\\UmodelExport" + CombinedMeshes.charPart4.replace("/", "\\"));
+                root.addProperty("assetPath5", localDir + "\\UmodelExport" + CombinedMeshes.charPart5.replace("/", "\\"));
+            } catch (Throwable e) {}
+            System.out.println(GSON.toJson(root));
+            File processedFile = new File("processed.json");
+            processedFile.createNewFile();
+            FileWriter writer = new FileWriter(processedFile);
+            writer.write(GSON.toJson(root));
+            writer.close();
         } catch (Exception e) {
+
             e.printStackTrace();
         }
+        LOGGER.info("Finished Exporting.");
         System.exit(0);
     }
 
     public static void umodelExport() throws Exception {
-        ProcessBuilder pb = new ProcessBuilder(Arrays.asList("umodel", "@umodelqueue.txt"));
+        try (PrintWriter printWriter = new PrintWriter("umodel_queue.txt")) {
+            printWriter.println("-path=\"" + config.PakDirectory + "\"");
+            String[] SplitUEVersion = config.UEVersion.toString().split("_");
+            printWriter.println("-game=ue4." + SplitUEVersion[2]);
+            printWriter.println("-aes=" + config.EncryptionKey);
+            printWriter.println("-export ");
+            printWriter.println("-pkg=" + CombinedMeshes.charPart1);
+            printWriter.println("-pkg=" + CombinedMeshes.charPart2);
+            printWriter.println("-pkg=" + CombinedMeshes.charPart3);
+            printWriter.println("-pkg=" + CombinedMeshes.charPart4);
+            printWriter.println("-pkg=" + CombinedMeshes.charPart5);
+
+        }
+        ProcessBuilder pb = new ProcessBuilder(Arrays.asList("umodel", "@umodel_queue.txt"));
         pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
         pb.redirectError(ProcessBuilder.Redirect.INHERIT);
         int exitCode = pb.start().waitFor();
-        LOGGER.info("Starting UModel Process");
     }
 
     public static void skinToParts() throws Exception {
@@ -141,84 +166,98 @@ public class main {
             createFile(String.format("\\Dumps\\%s\\", cosmeticResponse.name), HIDtoHSName + ".json", toJson);
         }
 
-        String assetPathFormat;
-        String assetNameFormat;
-        JsonObject baseJSON = GSON.fromJson(toJson, JsonObject.class);
-        JsonArray exportPropertiesArray = baseJSON.getAsJsonArray("export_properties");
-        for (JsonElement temp1 : exportPropertiesArray) {
-            JsonObject exportPropertiesObject = temp1.getAsJsonObject();
-            JsonArray characterPartsArray = exportPropertiesObject.getAsJsonArray("CharacterParts");
-            int i = 0;
-            for (JsonElement temp2 : characterPartsArray) {
-                i++;
-                JsonObject characterPartsObject = temp2.getAsJsonObject();
-                String assetUnformat = characterPartsObject.get("assetPath").getAsString();
-                String[] splitparts = assetUnformat.split("\\.");
-                if (i == 1) {
-                    assetPathFormat = splitparts[0];
-                    assetNameFormat = splitparts[1];
+        HStoCP HStoCP = GSON.fromJson(toJson, HStoCP.class);
+        for (int i = 0; i < 5; i++) {
+            try {
+                String[] splitparts = HStoCP.export_properties[0].CharacterParts[i].assetPath.split("\\.");
+                String MeshPath = splitparts[0];
+                String MeshName = splitparts[1];
+                if (i == 0) {
+                    CharacterParts.CPPath1 = MeshPath;
+                    CharacterParts.CPName1 = MeshName;
 
-                    characterPartsPath.CPPath1 = assetPathFormat;
-                    pkg = fileProvider.loadGameFile(assetPathFormat + ".uasset");
-                    toJson = pkg.toJson(locres); // HS Parse
+                    pkg = fileProvider.loadGameFile(CharacterParts.CPPath1 + ".uasset");
+                    toJson = pkg.toJson(locres);
                     if (config.dumpAssets) {
-                        createFile(String.format("\\Dumps\\%s\\", cosmeticResponse.name), assetNameFormat + ".json", toJson);
+                        createFile(String.format("\\Dumps\\%s\\", cosmeticResponse.name), CharacterParts.CPName1 + ".json", toJson);
                     }
+                    CPtoMesh cptoMesh = GSON.fromJson(toJson, CPtoMesh.class);
+                    String[] MeshSplit = cptoMesh.export_properties[1].SkeletalMesh.assetPath.split("\\.");
+                    CombinedMeshes.charPart1 = MeshSplit[0];
+                } else if (i == 1) {
+                    CharacterParts.CPPath2 = MeshPath;
+                    CharacterParts.CPName2 = MeshName;
+
+                    pkg = fileProvider.loadGameFile(CharacterParts.CPPath2 + ".uasset");
+                    toJson = pkg.toJson(locres);
+                    if (config.dumpAssets) {
+                        createFile(String.format("\\Dumps\\%s\\", cosmeticResponse.name), CharacterParts.CPName2 + ".json", toJson);
+                    }
+
+                    CPtoMesh cptoMesh = GSON.fromJson(toJson, CPtoMesh.class);
+                    String[] MeshSplit = cptoMesh.export_properties[1].SkeletalMesh.assetPath.split("\\.");
+                    CombinedMeshes.charPart2 = MeshSplit[0];
+                    ;
                 } else if (i == 2) {
-                    assetPathFormat = splitparts[0];
-                    assetNameFormat = splitparts[1];
+                    CharacterParts.CPPath3 = MeshPath;
+                    CharacterParts.CPName3 = MeshName;
 
-                    characterPartsPath.CPPath2 = assetPathFormat;
-                    pkg = fileProvider.loadGameFile(assetPathFormat + ".uasset");
-                    toJson = pkg.toJson(locres); // HS Parse
+                    pkg = fileProvider.loadGameFile(CharacterParts.CPPath3 + ".uasset");
+                    toJson = pkg.toJson(locres);
                     if (config.dumpAssets) {
-                        createFile(String.format("\\Dumps\\%s\\", cosmeticResponse.name), assetNameFormat + ".json", toJson);
+                        createFile(String.format("\\Dumps\\%s\\", cosmeticResponse.name), CharacterParts.CPName3 + ".json", toJson);
                     }
+
+                    CPtoMesh cptoMesh = GSON.fromJson(toJson, CPtoMesh.class);
+                    String[] MeshSplit = cptoMesh.export_properties[1].SkeletalMesh.assetPath.split("\\.");
+                    CombinedMeshes.charPart3 = MeshSplit[0];
                 } else if (i == 3) {
-                    assetPathFormat = splitparts[0];
-                    assetNameFormat = splitparts[1];
+                    CharacterParts.CPPath4 = MeshPath;
+                    CharacterParts.CPName4 = MeshName;
 
-                    characterPartsPath.CPPath3 = assetPathFormat;
-                    pkg = fileProvider.loadGameFile(assetPathFormat + ".uasset");
-                    toJson = pkg.toJson(locres); // HS Parse
+                    pkg = fileProvider.loadGameFile(CharacterParts.CPPath4 + ".uasset");
+                    toJson = pkg.toJson(locres);
                     if (config.dumpAssets) {
-                        createFile(String.format("\\Dumps\\%s\\", cosmeticResponse.name), assetNameFormat + ".json", toJson);
+                        createFile(String.format("\\Dumps\\%s\\", cosmeticResponse.name), CharacterParts.CPName4 + ".json", toJson);
                     }
+
+                    CPtoMesh cptoMesh = GSON.fromJson(toJson, CPtoMesh.class);
+                    String[] MeshSplit = cptoMesh.export_properties[1].SkeletalMesh.assetPath.split("\\.");
+                    CombinedMeshes.charPart4 = MeshSplit[0];
                 } else if (i == 4) {
-                    assetPathFormat = splitparts[0];
-                    assetNameFormat = splitparts[1];
+                    CharacterParts.CPPath5 = MeshPath;
+                    CharacterParts.CPName5 = MeshName;
 
-                    characterPartsPath.CPPath4 = assetPathFormat;
-                    pkg = fileProvider.loadGameFile(assetPathFormat + ".uasset");
-                    toJson = pkg.toJson(locres); // HS Parse
+                    pkg = fileProvider.loadGameFile(CharacterParts.CPPath5 + ".uasset");
+                    toJson = pkg.toJson(locres);
                     if (config.dumpAssets) {
-                        createFile(String.format("\\Dumps\\%s\\", cosmeticResponse.name), assetNameFormat + ".json", toJson);
+                        createFile(String.format("\\Dumps\\%s\\", cosmeticResponse.name), CharacterParts.CPName5 + ".json", toJson);
                     }
-                } else if (i == 5) {
-                    assetPathFormat = splitparts[0];
-                    assetNameFormat = splitparts[1];
-
-                    characterPartsPath.CPPath5 = assetPathFormat;
-                    pkg = fileProvider.loadGameFile(assetPathFormat + ".uasset");
-                    toJson = pkg.toJson(locres); // HS Parse
-                    if (config.dumpAssets) {
-                        createFile(String.format("\\Dumps\\%s\\", cosmeticResponse.name), assetNameFormat + ".json", toJson);
-                    }
+                    CPtoMesh cptoMesh = GSON.fromJson(toJson, CPtoMesh.class);
+                    String[] MeshSplit = cptoMesh.export_properties[1].SkeletalMesh.assetPath.split("\\.");
+                    CombinedMeshes.charPart5 = MeshSplit[0];
                 }
+            } catch (Exception e) {
+                continue;
             }
         }
 
-
     }
 
-    public static class CharacterPartsPath {
+    public static class CharacterParts {
         public static String CPPath1;
         public static String CPPath2;
         public static String CPPath3;
         public static String CPPath4;
         public static String CPPath5;
+        public static String CPName1;
+        public static String CPName2;
+        public static String CPName3;
+        public static String CPName4;
+        public static String CPName5;
 
     }
+
     public static class CombinedMeshes {
         public static String charPart1;
         public static String charPart2;
@@ -227,22 +266,50 @@ public class main {
         public static String charPart5;
     }
 
+    public static class HStoCP {
+            private CharacterParts[] export_properties;
+
+            public class CharacterParts {
+                public AssetPath[] CharacterParts;
+            }
+
+            public class AssetPath {
+                public String assetPath;
+            }
+
+        }
+
+    public static class CPtoMesh {
+            private SkeletalMesh[] export_properties;
+
+            public class SkeletalMesh {
+                public AssetPath SkeletalMesh;
+            }
+
+            public class AssetPath {
+                public String assetPath;
+            }
+        }
+
     public static class CharacterResponse {
-        public String id;
-        public String path;
-        public String name;
-    }
+            public String id;
+            public String path;
+            public String name;
+        }
+
     public static class Config {
-        public String repo = "https://github.com/24mstrassman/AutoExporter";
-        public String PakDirectory = "D:\\Fortnite 14.30 Backup\\Paks";
-        public Ue4Version UEVersion = Ue4Version.GAME_UE4_LATEST;
-        public String EncryptionKey = "0x3440AB1D1B824905842BE1574F149F9FC7DBA2BB566993E597402B4715A28BD5";
-        public boolean dumpAssets = false;
-    }
+            public String repo = "https://github.com/24mstrassman/AutoExporter";
+            public String PakDirectory = "D:\\Fortnite 14.30 Backup\\Paks";
+            public Ue4Version UEVersion = Ue4Version.GAME_UE4_LATEST;
+            public String EncryptionKey = "0x3440AB1D1B824905842BE1574F149F9FC7DBA2BB566993E597402B4715A28BD5";
+            public boolean dumpAssets = false;
+            public boolean umodelExport = true;
+        }
+
     private static class MainException extends Exception {
-        public MainException(String message) {
-            super(message);
+            public MainException(String message) {
+                super(message);
+            }
         }
     }
-}
 
