@@ -1,3 +1,6 @@
+/** Fortnite Auto Exporter
+ * Created by Half
+ **/
 package com.halfheart.fortniteautoexporter;
 
 import com.google.gson.*;
