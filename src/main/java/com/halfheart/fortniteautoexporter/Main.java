@@ -1,5 +1,4 @@
-/** Fortnite Auto Exporter
- * Created by Half
+/** Fortnite Auto Exporter by Half
  **/
 package com.halfheart.fortniteautoexporter;
 
