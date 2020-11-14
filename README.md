@@ -4,7 +4,7 @@ A tool made in Java/Python to automatically export and importing Fortnite Skins
 ## Usage
 
 ### Prerequisites
-* 64-bit Java
+* The Latest [Java Runtime Environment](https://www.oracle.com/java/technologies/javase-server-jre8-downloads.html) and 64-Bit Java
 * The Latest [Blender PSK/PSA Import Plguin](https://github.com/Befzz/blender3d_import_psk_psa)
 * 14.30 Fortnite Pak Files
 
