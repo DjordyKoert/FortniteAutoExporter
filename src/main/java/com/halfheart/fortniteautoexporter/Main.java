@@ -54,7 +54,7 @@ public class Main {
 
             LOGGER.info("Unreal Version: " + config.UEVersion);
 
-            File pakDir = new File(config.PakDirectory);
+            File pakDir = new File(config.PaksDirectory);
 
             if (!pakDir.exists()) {
                 throw new CustomException("Directory " + pakDir.getAbsolutePath() + " doesn't exist.");
@@ -106,7 +106,7 @@ public class Main {
 
     public static void umodelExport() throws Exception {
         try (PrintWriter printWriter = new PrintWriter("umodel_queue.txt")) {
-            printWriter.println("-path=\"" + config.PakDirectory + "\"");
+            printWriter.println("-path=\"" + config.PaksDirectory + "\"");
             String[] SplitUEVersion = config.UEVersion.toString().split("_");
             printWriter.println("-game=ue4." + SplitUEVersion[2]);
             printWriter.println("-aes=" + config.EncryptionKey);
@@ -454,7 +454,7 @@ public class Main {
             public String name;
         }
     public static class Config {
-            public String PakDirectory = "D:\\Fortnite 14.30 Backup\\Paks";
+            public String PaksDirectory = "D:\\Fortnite 14.30 Backup\\Paks";
             public Ue4Version UEVersion = Ue4Version.GAME_UE4_LATEST;
             public String EncryptionKey = "0x3440AB1D1B824905842BE1574F149F9FC7DBA2BB566993E597402B4715A28BD5";
             public boolean dumpAssets = false;
