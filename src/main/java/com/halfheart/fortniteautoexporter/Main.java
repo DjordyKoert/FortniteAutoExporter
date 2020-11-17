@@ -10,10 +10,6 @@ import static com.halfheart.fortniteautoexporter.basicTools.createDirectory;
 import static com.halfheart.fortniteautoexporter.basicTools.createFile;
 import static com.halfheart.fortniteautoexporter.basicTools.promptUser;
 
-import static com.halfheart.fortniteautoexporter.ItemDefinitionConversions.CIDtoHIDName;
-import static com.halfheart.fortniteautoexporter.ItemDefinitionConversions.CIDtoHIDPath;
-import static com.halfheart.fortniteautoexporter.ItemDefinitionConversions.HIDtoHS;
-
 import me.fungames.jfortniteparse.fileprovider.DefaultFileProvider;
 import me.fungames.jfortniteparse.ue4.assets.Package;
 import me.fungames.jfortniteparse.ue4.locres.FnLanguage;
@@ -28,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 
 import java.util.Arrays;
+
 public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger("FortniteAutoExporter");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -35,7 +32,7 @@ public class Main {
 
     private static Config config;
     private static DefaultFileProvider fileProvider;
-    private static CharacterResponse cosmeticResponse;
+    private static CharacterResponse[] cosmeticResponse;
 
     private static Package pkg;
     private static Locres locres;
@@ -61,63 +58,50 @@ public class Main {
             File pakDir = new File(config.PakDirectory);
 
             if (!pakDir.exists()) {
-                throw new MainException("Directory " + pakDir.getAbsolutePath() + " doesn't exist.");
+                throw new CustomException("Directory " + pakDir.getAbsolutePath() + " doesn't exist.");
             }
 
             LOGGER.info("Game Directory: " + pakDir.getAbsolutePath());
 
             if (config.UEVersion == null) {
-                throw new MainException("Invalid UE Version. Available Versions: " + Arrays.toString(Ue4Version.values()));
+                throw new CustomException("Invalid UE Version. Available Versions: " + Arrays.toString(Ue4Version.values()));
             }
 
             String SkinSelection = promptUser("Enter Skin Selection:");
+
+            String formattedCID = String.format("https://benbotfn.tk/api/v1/cosmetics/br/search/all?lang=en&searchLang=en&matchMethod=full&name=%s&backendType=AthenaCharacter", SkinSelection.replace(" ", "%20"));
+            Reader reader = new OkHttpClient().newCall(new Request.Builder().url(formattedCID).build()).execute().body().charStream();
+            cosmeticResponse = GSON.fromJson(reader, CharacterResponse[].class);
+            reader.close();
+
+            if (cosmeticResponse[0].path == null) {
+                throw new CustomException("Invalid Skin Selection.");
+            }
 
             fileProvider = new DefaultFileProvider(pakDir, config.UEVersion);
             fileProvider.submitKey(FGuid.Companion.getMainGuid(), config.EncryptionKey);
             locres = fileProvider.loadLocres(FnLanguage.EN);
 
-            String formattedCID = String.format("https://benbotfn.tk/api/v1/cosmetics/br/search?name=%s", SkinSelection.replace(" ", "%20"));
-            Reader reader = new OkHttpClient().newCall(new Request.Builder().url(formattedCID).build()).execute().body().charStream();
-            cosmeticResponse = GSON.fromJson(reader, CharacterResponse.class);
-            reader.close();
-
             if (config.dumpAssets) {
                 checkForLocalDirectory("\\Dumps\\");
-                createDirectory(String.format("\\Dumps\\%s\\", cosmeticResponse.name));
+                createDirectory(String.format("\\Dumps\\%s\\", cosmeticResponse[0].name));
             }
 
-            pkg = fileProvider.loadGameFile(cosmeticResponse.path + ".uasset");
-
-            if (cosmeticResponse.path == null) {
-                throw new MainException("Invalid Skin Selection.");
-            }
+            pkg = fileProvider.loadGameFile(cosmeticResponse[0].path + ".uasset");
 
             if (pkg == null) {
-                throw new MainException("Error Parsing Package.");
+                throw new CustomException("Error Parsing Package.");
             }
 
             skinToParts();
             umodelExport();
 
-            JsonObject root = new JsonObject();
-            try {
-                root.addProperty("assetPath1", localDir + "\\UmodelExport" + CombinedMeshes.charPart1.replace("/", "\\")+ ".psk");
-                root.addProperty("assetPath2", localDir + "\\UmodelExport" + CombinedMeshes.charPart2.replace("/", "\\") + ".psk");
-                root.addProperty("assetPath3", localDir + "\\UmodelExport" + CombinedMeshes.charPart3.replace("/", "\\") + ".psk");
-                root.addProperty("assetPath4", localDir + "\\UmodelExport" + CombinedMeshes.charPart4.replace("/", "\\") + ".psk");
-                root.addProperty("assetPath5", localDir + "\\UmodelExport" + CombinedMeshes.charPart5.replace("/", "\\") + ".psk");
-            } catch (Throwable e) {}
-            File processedFile = new File("processed.json");
-            processedFile.createNewFile();
-            FileWriter writer = new FileWriter(processedFile);
-            writer.write(GSON.toJson(root));
-            writer.close();
+            System.out.println("\nReplace workingDirectory in the python script with: \n\"" + localDir + "\"\n");
+            LOGGER.info("Finished Exporting.");
         } catch (Exception e) {
 
             e.printStackTrace();
         }
-        System.out.println("\nReplace workingDirectory in the python script with: \n\"" + localDir + "\"\n");
-        LOGGER.info("Finished Exporting.");
         System.exit(0);
     }
 
@@ -138,33 +122,51 @@ public class Main {
         ProcessBuilder pb = new ProcessBuilder(Arrays.asList("umodel", "@umodel_queue.txt"));
         pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
         pb.redirectError(ProcessBuilder.Redirect.INHERIT);
-        int exitCode = pb.start().waitFor();
+        pb.start().waitFor();
     }
-
-    public static void skinToParts() throws Exception {
+    public static void skinToParts() throws Exception{
 
         String toJson = pkg.toJson(locres); // CID Parse
 
         if (config.dumpAssets) {
-            createFile(String.format("\\Dumps\\%s\\", cosmeticResponse.name), cosmeticResponse.id + ".json", toJson);
+            createFile(String.format("\\Dumps\\%s\\", cosmeticResponse[0].name), cosmeticResponse[0].id + ".json", toJson);
         }
 
-        String CIDtoHIDPath = CIDtoHIDPath(toJson);
-        String CIDtoHIDName = CIDtoHIDName(toJson);
+
+        CIDtoHID CIDtoHID = GSON.fromJson(toJson, Main.CIDtoHID.class);
+        String CIDtoHIDPath = "";
+        String CIDtoHIDName = "";
+        try {
+            for (int i = 0; i < 10; i++) {
+                if (CIDtoHID.import_map[i].class_name.equals("FortHeroType")) {
+                    CIDtoHIDName = CIDtoHID.import_map[i].object_name;
+                } else if (CIDtoHID.import_map[i].class_name.equals("Package") && CIDtoHID.import_map[i].object_name.contains("HID")) {
+                    CIDtoHIDPath = CIDtoHID.import_map[i].object_name;
+                }
+            }
+        } catch (Throwable e) {}
 
         pkg = fileProvider.loadGameFile(CIDtoHIDPath + ".uasset");
         toJson = pkg.toJson(locres); // HID Parse
         if (config.dumpAssets) {
-            createFile(String.format("\\Dumps\\%s\\", cosmeticResponse.name), CIDtoHIDName + ".json", toJson);
+            createFile(String.format("\\Dumps\\%s\\", cosmeticResponse[0].name), CIDtoHIDName + ".json", toJson);
         }
 
-        String HIDtoHSPath = HIDtoHS(toJson, 0);
-        String HIDtoHSName = HIDtoHS(toJson, 1);
+        HIDtoHS HIDtoHS = GSON.fromJson(toJson, HIDtoHS.class);
+        String HIDtoHSPath = "";
+        String HIDtoHSName = "";
+        try {
+            for (int i = 0; i < 10; i++) {
+                String[] SplitHIDtoHS = HIDtoHS.export_properties[i].Specializations[0].assetPath.split("\\.");
+                HIDtoHSPath = SplitHIDtoHS[0];
+                HIDtoHSName = SplitHIDtoHS[1];
+                }
+        } catch (Throwable e) {}
 
         pkg = fileProvider.loadGameFile(HIDtoHSPath + ".uasset");
         toJson = pkg.toJson(locres); // HS Parse
         if (config.dumpAssets) {
-            createFile(String.format("\\Dumps\\%s\\", cosmeticResponse.name), HIDtoHSName + ".json", toJson);
+            createFile(String.format("\\Dumps\\%s\\", cosmeticResponse[0].name), HIDtoHSName + ".json", toJson);
         }
 
         HStoCP HStoCP = GSON.fromJson(toJson, HStoCP.class);
@@ -180,9 +182,13 @@ public class Main {
                     pkg = fileProvider.loadGameFile(CharacterParts.CPPath1 + ".uasset");
                     toJson = pkg.toJson(locres);
                     if (config.dumpAssets) {
-                        createFile(String.format("\\Dumps\\%s\\", cosmeticResponse.name), CharacterParts.CPName1 + ".json", toJson);
+                        createFile(String.format("\\Dumps\\%s\\", cosmeticResponse[0].name), CharacterParts.CPName1 + ".json", toJson);
                     }
                     CPtoMesh cptoMesh = GSON.fromJson(toJson, CPtoMesh.class);
+                    if (toJson.contains("OverrideMaterial")) {
+                        System.out.println("Override Found!!");
+                        System.out.println(cptoMesh.export_properties[1].MaterialOverrides[0].OverrideMaterial.assetPath);
+                    }
                     String[] MeshSplit = cptoMesh.export_properties[1].SkeletalMesh.assetPath.split("\\.");
                     CombinedMeshes.charPart1 = MeshSplit[0];
                 } else if (i == 1) {
@@ -192,10 +198,13 @@ public class Main {
                     pkg = fileProvider.loadGameFile(CharacterParts.CPPath2 + ".uasset");
                     toJson = pkg.toJson(locres);
                     if (config.dumpAssets) {
-                        createFile(String.format("\\Dumps\\%s\\", cosmeticResponse.name), CharacterParts.CPName2 + ".json", toJson);
+                        createFile(String.format("\\Dumps\\%s\\", cosmeticResponse[0].name), CharacterParts.CPName2 + ".json", toJson);
                     }
-
                     CPtoMesh cptoMesh = GSON.fromJson(toJson, CPtoMesh.class);
+                    if (toJson.contains("OverrideMaterial")) {
+                        System.out.println("Override Found!!");
+                        System.out.println(cptoMesh.export_properties[1].MaterialOverrides[0].OverrideMaterial.assetPath);
+                    }
                     String[] MeshSplit = cptoMesh.export_properties[1].SkeletalMesh.assetPath.split("\\.");
                     CombinedMeshes.charPart2 = MeshSplit[0];
 
@@ -206,10 +215,13 @@ public class Main {
                     pkg = fileProvider.loadGameFile(CharacterParts.CPPath3 + ".uasset");
                     toJson = pkg.toJson(locres);
                     if (config.dumpAssets) {
-                        createFile(String.format("\\Dumps\\%s\\", cosmeticResponse.name), CharacterParts.CPName3 + ".json", toJson);
+                        createFile(String.format("\\Dumps\\%s\\", cosmeticResponse[0].name), CharacterParts.CPName3 + ".json", toJson);
                     }
-
                     CPtoMesh cptoMesh = GSON.fromJson(toJson, CPtoMesh.class);
+                    if (toJson.contains("OverrideMaterial")) {
+                        System.out.println("Override Found!!");
+                        System.out.println(cptoMesh.export_properties[1].MaterialOverrides[0].OverrideMaterial.assetPath);
+                    }
                     String[] MeshSplit = cptoMesh.export_properties[1].SkeletalMesh.assetPath.split("\\.");
                     CombinedMeshes.charPart3 = MeshSplit[0];
                 } else if (i == 3) {
@@ -219,10 +231,13 @@ public class Main {
                     pkg = fileProvider.loadGameFile(CharacterParts.CPPath4 + ".uasset");
                     toJson = pkg.toJson(locres);
                     if (config.dumpAssets) {
-                        createFile(String.format("\\Dumps\\%s\\", cosmeticResponse.name), CharacterParts.CPName4 + ".json", toJson);
+                        createFile(String.format("\\Dumps\\%s\\", cosmeticResponse[0].name), CharacterParts.CPName4 + ".json", toJson);
                     }
-
                     CPtoMesh cptoMesh = GSON.fromJson(toJson, CPtoMesh.class);
+                    if (toJson.contains("OverrideMaterial")) {
+                        System.out.println("Override Found!!");
+                        System.out.println(cptoMesh.export_properties[1].MaterialOverrides[0].OverrideMaterial.assetPath);
+                    }
                     String[] MeshSplit = cptoMesh.export_properties[1].SkeletalMesh.assetPath.split("\\.");
                     CombinedMeshes.charPart4 = MeshSplit[0];
                 } else if (i == 4) {
@@ -232,9 +247,13 @@ public class Main {
                     pkg = fileProvider.loadGameFile(CharacterParts.CPPath5 + ".uasset");
                     toJson = pkg.toJson(locres);
                     if (config.dumpAssets) {
-                        createFile(String.format("\\Dumps\\%s\\", cosmeticResponse.name), CharacterParts.CPName5 + ".json", toJson);
+                        createFile(String.format("\\Dumps\\%s\\", cosmeticResponse[0].name), CharacterParts.CPName5 + ".json", toJson);
                     }
                     CPtoMesh cptoMesh = GSON.fromJson(toJson, CPtoMesh.class);
+                    if (toJson.contains("OverrideMaterial")) {
+                        System.out.println("Override Found!!");
+                        System.out.println(cptoMesh.export_properties[1].MaterialOverrides[0].OverrideMaterial.assetPath);
+                    }
                     String[] MeshSplit = cptoMesh.export_properties[1].SkeletalMesh.assetPath.split("\\.");
                     CombinedMeshes.charPart5 = MeshSplit[0];
                 }
@@ -243,6 +262,81 @@ public class Main {
             }
         }
 
+        String[] MeshesList = {CombinedMeshes.charPart1, CombinedMeshes.charPart2, CombinedMeshes.charPart3, CombinedMeshes.charPart4, CombinedMeshes.charPart5};
+
+        JsonObject root = new JsonObject();
+        try {
+            root.addProperty("characterName", cosmeticResponse[0].name);
+            JsonArray MeshArray = new JsonArray();
+            root.add("Meshes", MeshArray);
+
+            for (int i = 0; i < MeshesList.length; i++) {
+                MeshArray.add(localDir + "\\UmodelExport" + MeshesList[i].replace("/", "\\") + ".psk");
+            }
+        } catch (Throwable e) {}
+
+        JsonArray MaterialArray = new JsonArray();
+        root.add("Materials", MaterialArray);
+
+        JsonArray Material1, Material2, Material3, Material4, Material5, Material6, Material7, Material8;
+        JsonObject Material1OBJ, Material2OBJ, Material3OBJ, Material4OBJ, Material5OBJ, Material6OBJ, Material7OBJ, Material8OBJ;
+
+        JsonArray[] MaterialsList = {Material1 = new JsonArray(), Material2 = new JsonArray(), Material3 = new JsonArray(), Material4 = new JsonArray(),
+                Material5 = new JsonArray(), Material6 = new JsonArray(), Material7 = new JsonArray(), Material8 = new JsonArray()};
+
+        JsonObject[] MaterialsListObject = {Material1OBJ = new JsonObject(), Material2OBJ = new JsonObject(), Material3OBJ = new JsonObject(), Material4OBJ = new JsonObject(),
+                Material5OBJ = new JsonObject(), Material6OBJ = new JsonObject(), Material7OBJ = new JsonObject(), Material8OBJ = new JsonObject()};
+
+        try {
+            int i = 0;
+            int h = 0;
+            while (i < MaterialsList.length-1) {
+                pkg = fileProvider.loadGameFile(MeshesList[i] + ".uasset");
+                toJson = pkg.toJson(locres);
+
+                MeshtoMaterial meshtomat = GSON.fromJson(toJson, MeshtoMaterial.class);
+
+                for (int e = 0; e < meshtomat.import_map.length-1; e++) {
+                    if (meshtomat.import_map[e].class_name.contains("Package") && meshtomat.import_map[e].object_name.contains("Material")
+                            && !meshtomat.import_map[e].object_name.contains("Engine")) {
+                        h++;
+                        MaterialArray.add(MaterialsListObject[h]);
+                        MaterialsListObject[h].addProperty("materialPath", meshtomat.import_map[e].object_name);
+
+                        pkg = fileProvider.loadGameFile(meshtomat.import_map[e].object_name + ".uasset");
+                        toJson = pkg.toJson(locres);
+                        MaterialParse matparse = GSON.fromJson(toJson, MaterialParse.class);
+
+                        if (toJson.contains("TextureParameterValues")) {
+                            for (int j = 0; j < matparse.export_properties[0].TextureParameterValues.length; j++ ) {
+                                String texname = matparse.export_properties[0].TextureParameterValues[j].ParameterInfo.Name;
+                                String texval = matparse.export_properties[0].TextureParameterValues[j].ParameterValue;
+
+                                for (int g = 0; g < matparse.import_map.length-1; g++) {
+                                    if (matparse.import_map[g].class_name.contains("Package") && matparse.import_map[g].object_name.contains(texval)) {
+                                        MaterialsListObject[h].addProperty(texname, localDir + "\\UmodelExport" +
+                                                matparse.import_map[g].object_name.replace("/", "\\") + ".tga");
+                                    }
+                                }
+                                ;
+                            }
+                        }
+
+                    }
+                }
+                i++;
+                }
+
+        } catch (Exception throwableitem) {
+        }
+
+        File processedFile = new File("processed.json");
+        processedFile.createNewFile();
+
+        FileWriter writer = new FileWriter(processedFile);
+
+        writer.write(GSON.toJson(root));
+        writer.close();
     }
 
     public static class CharacterParts {
@@ -258,15 +352,53 @@ public class Main {
         public static String CPName5;
 
     }
-
     public static class CombinedMeshes {
         public static String charPart1;
         public static String charPart2;
         public static String charPart3;
         public static String charPart4;
         public static String charPart5;
+
     }
 
+    public static class MaterialParse {
+        private importedmapstuff[] import_map;
+        public class importedmapstuff {
+            public String class_name;
+            public String object_name;
+        }
+
+        private TextureParameterValues[] export_properties;
+        public class TextureParameterValues {
+
+            public Parameters[] TextureParameterValues;
+        }
+        public class Parameters {
+            public ParameterInfo ParameterInfo;
+            public String ParameterValue;
+        }
+        public class ParameterInfo {
+            public String Name;
+        }
+    }
+
+    public static class CIDtoHID {
+        private importMapSelection[] import_map;
+        public class importMapSelection {
+            public String class_name;
+            public String object_name;
+        }
+    }
+    public static class HIDtoHS {
+        private Specializations[] export_properties;
+
+        public class Specializations {
+            public AssetPath[] Specializations;
+        }
+        public class AssetPath {
+            public String assetPath;
+        }
+    }
     public static class HStoCP {
             private CharacterParts[] export_properties;
 
@@ -279,25 +411,49 @@ public class Main {
             }
 
         }
-
     public static class CPtoMesh {
             private SkeletalMesh[] export_properties;
 
             public class SkeletalMesh {
                 public AssetPath SkeletalMesh;
+                public OverrideMaterial[] MaterialOverrides;
+            }
+            public class OverrideMaterial {
+                public AssetPath OverrideMaterial;
             }
 
             public class AssetPath {
                 public String assetPath;
             }
         }
+    public static class MeshtoMaterial {
+        private importMapSelection[] import_map;
+        public class importMapSelection {
+            public String class_name;
+            public String object_name;
+        }
+    }
+    public static class OverrideMaterialParse {
+        private MaterialOverrides[] export_properties;
+
+        public class MaterialOverrides {
+            public AssetPath[] MaterialOverrides;
+        }
+
+        public class OverrideMaterial {
+            public AssetPath OverrideMaterial;
+        }
+
+        public class AssetPath {
+            public String assetPath;
+        }
+    }
 
     public static class CharacterResponse {
             public String id;
             public String path;
             public String name;
         }
-
     public static class Config {
             public String PakDirectory = "D:\\Fortnite 14.30 Backup\\Paks";
             public Ue4Version UEVersion = Ue4Version.GAME_UE4_LATEST;
@@ -305,10 +461,9 @@ public class Main {
             public boolean dumpAssets = false;
         }
 
-    private static class MainException extends Exception {
-            public MainException(String message) {
+    private static class CustomException extends Exception {
+            public CustomException(String message) {
                 super(message);
             }
         }
     }
-
