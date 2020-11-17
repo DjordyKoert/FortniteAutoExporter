@@ -1,5 +1,5 @@
 # AutoExporter
-A tool made in Java/Python to automatically export and importing Fortnite Skins
+A tool made in Java/Python to automatically import Fortnite Skins into blender
 
 ## Usage
 
