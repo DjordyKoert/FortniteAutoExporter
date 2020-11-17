@@ -1,5 +1,5 @@
 # AutoExporter
-A tool made in Java/Python to automatically export and importing Fortnite Skins
+A tool made in Java/Python to automatically import Fortnite Skins into blender
 
 ## Usage
 
@@ -11,7 +11,10 @@ A tool made in Java/Python to automatically export and importing Fortnite Skins
 
 ### Importer
 * Open Blender and import the python script **autoexporter.py** in the scripting tab
-* In the script, change the **workingDirectory** variable to the path you got from the exporter
+* In the script, change the **workingDirectory** variable to the path you got from the exporter (At the top of the importer script, make sure the path ahs double slashes)
+* Feel free to change the other options as well
+  * **bReorientBones** toggles reoriented bones
+  * **textureCharacter** toggles automatic character texturing
 
 
 ## Config
