@@ -29,7 +29,7 @@ A tool made in Java/Python to automatically export and importing Fortnite Skins
 * 14.30 Fortnite Pak Files
 
 ## Required Files
-* **umodel.exe** : Exports Meshes & Textures(September 30th Build works best with the v14.30 pak files)
+* **umodel.exe** : Exports Meshes & Textures (September 30th Build works best with the v14.30 pak files)
 * **SDL2.dll** : Required by umodel
 * **RunExporter.bat** : Runs the exporter
 * **FortniteAutoExporter.jar** : The exporter that is started by the **RunExporter.bat**
