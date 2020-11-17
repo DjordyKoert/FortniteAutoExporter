@@ -27,7 +27,7 @@ A tool made in Java/Python to automatically import Fortnite Skins into blender
 ## Info
 
 ### Prerequisites
-* The Latest [Java Runtime Environment](https://www.oracle.com/java/technologies/javase-server-jre8-downloads.html) and [JDK 8](https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html) or higher
+* The Latest [Java Runtime Environment](https://www.oracle.com/java/technologies/javase-server-jre8-downloads.html) and [JDK 11](https://www.oracle.com/java/technologies/javase-jdk11-downloads.html) or higher
 * The Latest [Blender PSK/PSA Import Plguin](https://github.com/Befzz/blender3d_import_psk_psa)
 * 14.30 Fortnite Pak Files
 
