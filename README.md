@@ -33,7 +33,7 @@ A tool made in Java/Python to automatically export and importing Fortnite Skins
 * **SDL2.dll** : Required by umodel
 * **RunExporter.bat** : Runs the exporter
 * **FortniteAutoExporter.jar** : The exporter that is started by the **RunExporter.bat**
-* **config.json** : Config file for **RunExporter.bat**
+* **config.json** : Config file for the exporter
 * **autoexporter.py** : The import script for blender
 * **shader.blend** : The shader that is imported during the texturing process
 
