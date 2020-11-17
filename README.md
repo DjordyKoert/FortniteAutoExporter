@@ -3,12 +3,6 @@ A tool made in Java/Python to automatically export and importing Fortnite Skins
 
 ## Usage
 
-### Prerequisites
-* The Latest [Java Runtime Environment](https://www.oracle.com/java/technologies/javase-server-jre8-downloads.html) and [JDK 8](https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html) or higher
-* The Latest [Blender PSK/PSA Import Plguin](https://github.com/Befzz/blender3d_import_psk_psa)
-* 14.30 Fortnite Pak Files
-
-
 ### Exporter
 * Extract the zip file
 * Edit the [config.json](#Config) to fit your needs
@@ -23,3 +17,22 @@ A tool made in Java/Python to automatically export and importing Fortnite Skins
 * **UEVersion** : Unreal Engine Version
 * **EncryptionKey** : AES Key to load the paks with
 * **dumpAssets** : Dump each step of the parsing process as a .json file into the Dumps folder
+
+## Info
+
+### Prerequisites
+* The Latest [Java Runtime Environment](https://www.oracle.com/java/technologies/javase-server-jre8-downloads.html) and [JDK 8](https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html) or higher
+* The Latest [Blender PSK/PSA Import Plguin](https://github.com/Befzz/blender3d_import_psk_psa)
+* 14.30 Fortnite Pak Files
+
+## Required Files
+* **umodel.exe** : Exports Meshes & Textures(September 30th Build works best with the v14.30 pak files)
+* **SDL2.dll** : Required by umodel
+* **RunExporter.bat** : Runs the exporter
+* **config.json** : Config file for **RunExporter.bat**
+
+## Limitations
+* Reskins don't texture properly
+* Skin styles aren't supported
+* Bone parenting needs to be done manually
+* Few skins with weird materials don't texture properly
