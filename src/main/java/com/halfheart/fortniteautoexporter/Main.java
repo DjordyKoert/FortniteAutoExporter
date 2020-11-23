@@ -23,6 +23,8 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 
 import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger("FortniteAutoExporter");
@@ -32,11 +34,13 @@ public class Main {
     private static Config config;
     private static DefaultFileProvider fileProvider;
     private static CharacterResponse[] cosmeticResponse;
+    private static AESResponse AESResponse;
 
     private static Package pkg;
     private static Locres locres;
     
     private static File pakDir;
+    private static String VersionSelection;
 
     public static void main(String[] Args) throws Exception {
         try {
@@ -55,6 +59,8 @@ public class Main {
             }
 
             LOGGER.info("Unreal Version: " + config.UEVersion);
+            
+            config.EncryptionKey = attemptGetAESKey();
             
             pakDir = new File(config.PaksDirectory);
 
@@ -96,8 +102,7 @@ public class Main {
         pb.start().waitFor();
     }
     public static void selectSkinPromt() throws Exception {
-        String SkinSelection = promptUser("Enter Skin Selection:");
-
+    	String SkinSelection = promptUser("(CTRL+C to quit) Enter Skin Selection:");
         String formattedCID = String.format("https://benbotfn.tk/api/v1/cosmetics/br/search/all?lang=en&searchLang=en&matchMethod=full&name=%s&backendType=AthenaCharacter", SkinSelection.replace(" ", "%20"));
         Reader reader = new OkHttpClient().newCall(new Request.Builder().url(formattedCID).build()).execute().body().charStream();
         cosmeticResponse = GSON.fromJson(reader, CharacterResponse[].class);
@@ -134,6 +139,34 @@ public class Main {
         LOGGER.info("Finished Exporting.");
         
         selectSkinPromt();
+    }
+    
+    public static String attemptGetAESKey() throws Exception{
+//    	Attempt to find version in PAK Directory name
+    	Pattern pattern = Pattern.compile("[0-9][0-9]\\W[0-9][0-9]");
+    	Matcher matcher = pattern.matcher(config.PaksDirectory);
+
+    	if (matcher.find()) {
+    		LOGGER.info("Detected PAK Version: '" + matcher.group(0) + "', From PAK Directory: '" + config.PaksDirectory + "'");
+	    	
+	    	VersionSelection = matcher.group(0);
+    	}
+    	else {    		
+    		VersionSelection = promptUser("(CTRL+C to quit) Enter PAK Version:");
+    	}
+        String VersionSelectionFormatted = String.format("%s",VersionSelection);
+        
+        String formattedCID = String.format("https://benbotfn.tk/api/v1//aes?version=%s", VersionSelectionFormatted.replace(" ", "."));
+        Reader reader = new OkHttpClient().newCall(new Request.Builder().url(formattedCID).build()).execute().body().charStream();
+        AESResponse = GSON.fromJson(reader, AESResponse.class);
+        reader.close();
+        
+        if (AESResponse == null) {
+        	LOGGER.info("Using AESKey From Config: '" + AESResponse.mainKey +"'");
+        }
+    	
+        LOGGER.info("Found AESKey From API: '" + AESResponse.mainKey + "'");
+    	return AESResponse.mainKey;
     }
     
     public static void skinToParts() throws Exception{
@@ -465,7 +498,12 @@ public class Main {
             public String id;
             public String path;
             public String name;
-        }
+    }
+    public static class AESResponse {
+        public String version;
+        public String mainKey;
+        public Object dynamicKeys;
+    }
     public static class Config {
             public String PaksDirectory = "D:\\Fortnite 14.30 Backup\\Paks";
             public Ue4Version UEVersion = Ue4Version.GAME_UE4_LATEST;
