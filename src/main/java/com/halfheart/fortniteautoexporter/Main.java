@@ -38,7 +38,7 @@ public class Main {
 
     private static Package pkg;
     private static Locres locres;
-    
+
     private static File pakDir;
     private static String VersionSelection;
 
@@ -59,9 +59,9 @@ public class Main {
             }
 
             LOGGER.info("Unreal Version: " + config.UEVersion);
-            
+
             config.EncryptionKey = attemptGetAESKey();
-            
+
             pakDir = new File(config.PaksDirectory);
 
             if (!pakDir.exists()) {
@@ -102,18 +102,18 @@ public class Main {
         pb.start().waitFor();
     }
     public static void selectSkinPrompt() throws Exception {
-    	String SkinSelection = promptUser("(CTRL+C to quit) Enter Skin Selection:");
+        String SkinSelection = promptUser("(CTRL+C to quit) Enter Skin Selection:");
         String formattedCID = String.format("https://benbotfn.tk/api/v1/cosmetics/br/search/all?lang=en&searchLang=en&matchMethod=full&name=%s&backendType=AthenaCharacter", SkinSelection.replace(" ", "%20"));
         Reader reader = new OkHttpClient().newCall(new Request.Builder().url(formattedCID).build()).execute().body().charStream();
         cosmeticResponse = GSON.fromJson(reader, CharacterResponse[].class);
         reader.close();
 
         if (cosmeticResponse.length == 0) {
-        	System.err.println("Skin Not Found.");
+            System.err.println("Skin Not Found.");
             selectSkinPrompt();
         }
         if (cosmeticResponse[0].path == null) {
-        	System.err.println("Invalid Skin Selection.");
+            System.err.println("Invalid Skin Selection.");
             selectSkinPrompt();
         }
 
@@ -140,35 +140,35 @@ public class Main {
 
         selectSkinPrompt();
     }
-    
+
     public static String attemptGetAESKey() throws Exception{
 //    	Attempt to find version in PAK Directory name
-    	Pattern pattern = Pattern.compile("[0-9][0-9]\\W[0-9][0-9]");
-    	Matcher matcher = pattern.matcher(config.PaksDirectory);
+        Pattern pattern = Pattern.compile("[0-9][0-9]\\W[0-9][0-9]");
+        Matcher matcher = pattern.matcher(config.PaksDirectory);
 
-    	if (matcher.find()) {
-    		LOGGER.info("Detected PAK Version: '" + matcher.group(0) + "', From PAK Directory: '" + config.PaksDirectory + "'");
-	    	
-	    	VersionSelection = matcher.group(0);
-    	}
-    	else {    		
-    		VersionSelection = promptUser("(CTRL+C to quit) Enter PAK Version:");
-    	}
+        if (matcher.find()) {
+            LOGGER.info("Detected PAK Version: '" + matcher.group(0) + "', From PAK Directory: '" + config.PaksDirectory + "'");
+
+            VersionSelection = matcher.group(0);
+        }
+        else {
+            VersionSelection = promptUser("(CTRL+C to quit) Enter PAK Version:");
+        }
         String VersionSelectionFormatted = String.format("%s",VersionSelection);
-        
+
         String formattedCID = String.format("https://benbotfn.tk/api/v1//aes?version=%s", VersionSelectionFormatted.replace(" ", "."));
         Reader reader = new OkHttpClient().newCall(new Request.Builder().url(formattedCID).build()).execute().body().charStream();
         AESResponse = GSON.fromJson(reader, AESResponse.class);
         reader.close();
-        
+
         if (AESResponse == null) {
-        	LOGGER.info("Using AESKey From Config: '" + AESResponse.mainKey +"'");
+            LOGGER.info("Using AESKey From Config: '" + AESResponse.mainKey +"'");
         }
-    	
+
         LOGGER.info("Found AESKey From API: '" + AESResponse.mainKey + "'");
-    	return AESResponse.mainKey;
+        return AESResponse.mainKey;
     }
-    
+
     public static void skinToParts() throws Exception{
 
         String toJson = pkg.toJson(locres); // CID Parse
@@ -205,7 +205,7 @@ public class Main {
                 String[] SplitHIDtoHS = HIDtoHS.export_properties[i].Specializations[0].assetPath.split("\\.");
                 HIDtoHSPath = SplitHIDtoHS[0];
                 HIDtoHSName = SplitHIDtoHS[1];
-                }
+            }
         } catch (Throwable e) {}
 
         pkg = fileProvider.loadGameFile(HIDtoHSPath + ".uasset");
@@ -370,7 +370,7 @@ public class Main {
                     }
                 }
                 i++;
-                }
+            }
 
         } catch (Exception throwableitem) {
         }
@@ -445,32 +445,32 @@ public class Main {
         }
     }
     public static class HStoCP {
-            private CharacterParts[] export_properties;
+        private CharacterParts[] export_properties;
 
-            public class CharacterParts {
-                public AssetPath[] CharacterParts;
-            }
-
-            public class AssetPath {
-                public String assetPath;
-            }
-
+        public class CharacterParts {
+            public AssetPath[] CharacterParts;
         }
+
+        public class AssetPath {
+            public String assetPath;
+        }
+
+    }
     public static class CPtoMesh {
-            private SkeletalMesh[] export_properties;
+        private SkeletalMesh[] export_properties;
 
-            public class SkeletalMesh {
-                public AssetPath SkeletalMesh;
-                public OverrideMaterial[] MaterialOverrides;
-            }
-            public class OverrideMaterial {
-                public AssetPath OverrideMaterial;
-            }
-
-            public class AssetPath {
-                public String assetPath;
-            }
+        public class SkeletalMesh {
+            public AssetPath SkeletalMesh;
+            public OverrideMaterial[] MaterialOverrides;
         }
+        public class OverrideMaterial {
+            public AssetPath OverrideMaterial;
+        }
+
+        public class AssetPath {
+            public String assetPath;
+        }
+    }
     public static class MeshtoMaterial {
         private importMapSelection[] import_map;
         public class importMapSelection {
@@ -495,9 +495,9 @@ public class Main {
     }
 
     public static class CharacterResponse {
-            public String id;
-            public String path;
-            public String name;
+        public String id;
+        public String path;
+        public String name;
     }
     public static class AESResponse {
         public String version;
@@ -505,15 +505,15 @@ public class Main {
         public Object dynamicKeys;
     }
     public static class Config {
-            public String PaksDirectory = "D:\\Fortnite 14.30 Backup\\Paks";
-            public Ue4Version UEVersion = Ue4Version.GAME_UE4_LATEST;
-            public String EncryptionKey = "0x3440AB1D1B824905842BE1574F149F9FC7DBA2BB566993E597402B4715A28BD5";
-            public boolean dumpAssets = false;
-        }
+        public String PaksDirectory = "D:\\Fortnite 14.30 Backup\\Paks";
+        public Ue4Version UEVersion = Ue4Version.GAME_UE4_LATEST;
+        public String EncryptionKey = "0x3440AB1D1B824905842BE1574F149F9FC7DBA2BB566993E597402B4715A28BD5";
+        public boolean dumpAssets = false;
+    }
 
     private static class CustomException extends Exception {
-            public CustomException(String message) {
-                super(message);
-            }
+        public CustomException(String message) {
+            super(message);
         }
     }
+}
