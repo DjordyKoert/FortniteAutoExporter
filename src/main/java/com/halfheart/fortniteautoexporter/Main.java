@@ -74,7 +74,7 @@ public class Main {
                 throw new CustomException("Invalid UE Version. Available Versions: " + Arrays.toString(Ue4Version.values()));
             }
 
-            selectSkinPromt();
+            selectSkinPrompt();
         } catch (Exception e) {
 
             e.printStackTrace();
@@ -101,7 +101,7 @@ public class Main {
         pb.redirectError(ProcessBuilder.Redirect.INHERIT);
         pb.start().waitFor();
     }
-    public static void selectSkinPromt() throws Exception {
+    public static void selectSkinPrompt() throws Exception {
     	String SkinSelection = promptUser("(CTRL+C to quit) Enter Skin Selection:");
         String formattedCID = String.format("https://benbotfn.tk/api/v1/cosmetics/br/search/all?lang=en&searchLang=en&matchMethod=full&name=%s&backendType=AthenaCharacter", SkinSelection.replace(" ", "%20"));
         Reader reader = new OkHttpClient().newCall(new Request.Builder().url(formattedCID).build()).execute().body().charStream();
@@ -110,11 +110,11 @@ public class Main {
 
         if (cosmeticResponse.length == 0) {
         	System.err.println("Skin Not Found.");
-        	selectSkinPromt();
+            selectSkinPrompt();
         }
         if (cosmeticResponse[0].path == null) {
         	System.err.println("Invalid Skin Selection.");
-        	selectSkinPromt();
+            selectSkinPrompt();
         }
 
         fileProvider = new DefaultFileProvider(pakDir, config.UEVersion);
@@ -137,8 +137,8 @@ public class Main {
 
         System.out.println("\nReplace workingDirectory in the python script with: \n\"" + localDir + "\"\n");
         LOGGER.info("Finished Exporting.");
-        
-        selectSkinPromt();
+
+        selectSkinPrompt();
     }
     
     public static String attemptGetAESKey() throws Exception{
