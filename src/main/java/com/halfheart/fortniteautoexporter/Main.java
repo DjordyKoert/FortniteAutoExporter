@@ -35,6 +35,8 @@ public class Main {
 
     private static Package pkg;
     private static Locres locres;
+    
+    private static File pakDir;
 
     public static void main(String[] Args) throws Exception {
         try {
@@ -53,8 +55,8 @@ public class Main {
             }
 
             LOGGER.info("Unreal Version: " + config.UEVersion);
-
-            File pakDir = new File(config.PaksDirectory);
+            
+            pakDir = new File(config.PaksDirectory);
 
             if (!pakDir.exists()) {
                 throw new CustomException("Directory " + pakDir.getAbsolutePath() + " doesn't exist.");
@@ -66,37 +68,7 @@ public class Main {
                 throw new CustomException("Invalid UE Version. Available Versions: " + Arrays.toString(Ue4Version.values()));
             }
 
-            String SkinSelection = promptUser("Enter Skin Selection:");
-
-            String formattedCID = String.format("https://benbotfn.tk/api/v1/cosmetics/br/search/all?lang=en&searchLang=en&matchMethod=full&name=%s&backendType=AthenaCharacter", SkinSelection.replace(" ", "%20"));
-            Reader reader = new OkHttpClient().newCall(new Request.Builder().url(formattedCID).build()).execute().body().charStream();
-            cosmeticResponse = GSON.fromJson(reader, CharacterResponse[].class);
-            reader.close();
-
-            if (cosmeticResponse[0].path == null) {
-                throw new CustomException("Invalid Skin Selection.");
-            }
-
-            fileProvider = new DefaultFileProvider(pakDir, config.UEVersion);
-            fileProvider.submitKey(FGuid.Companion.getMainGuid(), config.EncryptionKey);
-            locres = fileProvider.loadLocres(FnLanguage.EN);
-
-            if (config.dumpAssets) {
-                checkForLocalDirectory("\\Dumps\\");
-                createDirectory(String.format("\\Dumps\\%s\\", cosmeticResponse[0].name));
-            }
-
-            pkg = fileProvider.loadGameFile(cosmeticResponse[0].path + ".uasset");
-
-            if (pkg == null) {
-                throw new CustomException("Error Parsing Package.");
-            }
-
-            skinToParts();
-            umodelExport();
-
-            System.out.println("\nReplace workingDirectory in the python script with: \n\"" + localDir + "\"\n");
-            LOGGER.info("Finished Exporting.");
+            selectSkinPromt();
         } catch (Exception e) {
 
             e.printStackTrace();
@@ -123,6 +95,47 @@ public class Main {
         pb.redirectError(ProcessBuilder.Redirect.INHERIT);
         pb.start().waitFor();
     }
+    public static void selectSkinPromt() throws Exception {
+        String SkinSelection = promptUser("Enter Skin Selection:");
+
+        String formattedCID = String.format("https://benbotfn.tk/api/v1/cosmetics/br/search/all?lang=en&searchLang=en&matchMethod=full&name=%s&backendType=AthenaCharacter", SkinSelection.replace(" ", "%20"));
+        Reader reader = new OkHttpClient().newCall(new Request.Builder().url(formattedCID).build()).execute().body().charStream();
+        cosmeticResponse = GSON.fromJson(reader, CharacterResponse[].class);
+        reader.close();
+
+        if (cosmeticResponse.length == 0) {
+        	System.err.println("Skin Not Found.");
+        	selectSkinPromt();
+        }
+        if (cosmeticResponse[0].path == null) {
+        	System.err.println("Invalid Skin Selection.");
+        	selectSkinPromt();
+        }
+
+        fileProvider = new DefaultFileProvider(pakDir, config.UEVersion);
+        fileProvider.submitKey(FGuid.Companion.getMainGuid(), config.EncryptionKey);
+        locres = fileProvider.loadLocres(FnLanguage.EN);
+
+        if (config.dumpAssets) {
+            checkForLocalDirectory("\\Dumps\\");
+            createDirectory(String.format("\\Dumps\\%s\\", cosmeticResponse[0].name));
+        }
+
+        pkg = fileProvider.loadGameFile(cosmeticResponse[0].path + ".uasset");
+
+        if (pkg == null) {
+            throw new CustomException("Error Parsing Package.");
+        }
+
+        skinToParts();
+        umodelExport();
+
+        System.out.println("\nReplace workingDirectory in the python script with: \n\"" + localDir + "\"\n");
+        LOGGER.info("Finished Exporting.");
+        
+        selectSkinPromt();
+    }
+    
     public static void skinToParts() throws Exception{
 
         String toJson = pkg.toJson(locres); // CID Parse

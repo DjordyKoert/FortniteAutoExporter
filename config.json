@@ -1,6 +1,6 @@
 {
-  "PaksDirectory": "D:\\Fortnite 14.30 Backup\\Paks\\",
+  "PaksDirectory": "D:\\14.30 pak\\V14_30_PAKs",
   "UEVersion": "GAME_UE4_26",
   "EncryptionKey": "0x3440AB1D1B824905842BE1574F149F9FC7DBA2BB566993E597402B4715A28BD5",
-  "dumpAssets": false
+  "dumpAssets": true
 }
