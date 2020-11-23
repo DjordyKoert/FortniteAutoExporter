@@ -1,5 +1,15 @@
 # Project exclude paths
 /.gradle/
-/.idea/
+/.settings/
+/.classpath
+/.project
+/bin/
 /build/
 /build/classes/java/main/
+
+/Dumps/
+/processed.json
+/FortniteAutoExporter.log
+
+/umodel.exe
+/umodel_queue.txt
